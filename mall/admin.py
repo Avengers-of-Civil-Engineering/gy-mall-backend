@@ -1,7 +1,7 @@
 from django.contrib import admin
 
-from .models import OrderItem
 from .models import Merchant, Product, MerchantProductsTab, AppImage, Order
+from .models import OrderItem
 
 
 class OrderItemInline(admin.TabularInline):
@@ -23,7 +23,7 @@ class MerchantAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    pass
+    list_filter = ('merchant',)
 
 
 @admin.register(MerchantProductsTab)

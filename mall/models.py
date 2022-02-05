@@ -44,6 +44,7 @@ class Merchant(models.Model):
 
     slogan = models.CharField(max_length=191, blank=True, verbose_name='促销文字说明')
 
+    rank = models.IntegerField(verbose_name='排序(大->小)', default=999, db_index=True)
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
 
@@ -51,6 +52,7 @@ class Merchant(models.Model):
         return self.name
 
     class Meta:
+        ordering = ('-rank',)
         verbose_name = verbose_name_plural = "商户"
 
 
@@ -60,14 +62,21 @@ class MerchantProductsTab(models.Model):
     """
     merchant = models.ForeignKey(Merchant, related_name='tabs', on_delete=models.CASCADE, verbose_name='商户')
     name = models.CharField(max_length=191, verbose_name="类目名")
-    rank = models.IntegerField(verbose_name='排序(大->小)', default=999)
+    slug = models.CharField(max_length=191, verbose_name='slug')
+    rank = models.IntegerField(verbose_name='排序(大->小)', default=999, db_index=True)
+
+    create_at = models.DateTimeField(auto_now_add=True)
+    update_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.merchant.name}: {self.name}"
 
     class Meta:
         verbose_name = verbose_name_plural = "类目"
         ordering = ('-rank',)
+        constraints = (
+            models.UniqueConstraint(fields=['merchant', 'slug'], name='unique-merchant-slug'),
+        )
 
 
 class Product(models.Model):

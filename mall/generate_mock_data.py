@@ -64,6 +64,25 @@ def gen_merchants():
     m2.save()
 
 
+tabs_dict = [
+    {'name': '电子', 'slug': 'electronic'},
+    {'name': '新鲜水果', 'slug': 'fruit'},
+]
+
+
+def gen_merchant_tabs():
+    m1 = Merchant.objects.get(name="沃尔玛")
+    m2 = Merchant.objects.get(name="山姆会员店")
+
+    for m in (m1, m2):
+        for tab_raw in tabs_dict:
+            tab, _ = MerchantProductsTab.objects.get_or_create(
+                merchant=m,
+                name=tab_raw['name'],
+                slug=tab_raw['slug'],
+            )
+
+
 products_dict = [
     {
         'name': '任天堂Switch日版游戏机续航加强版',
@@ -119,7 +138,7 @@ def gen_products():
 
     for m in (m1, m2):
         for p_raw in products_dict:
-            tab, _ = MerchantProductsTab.objects.get_or_create(merchant=m, name=p_raw['tab'])
+            tab = MerchantProductsTab.objects.get(merchant=m, name=p_raw['tab'])
             p = Product.objects.filter(merchant=m, name=p_raw['name']).first()
             if p is None:
                 p = Product.objects.create(
@@ -150,5 +169,7 @@ def generate_mock_data():
     gen_users()
 
     gen_merchants()
+
+    gen_merchant_tabs()
 
     gen_products()
