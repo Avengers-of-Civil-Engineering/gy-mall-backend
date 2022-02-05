@@ -17,6 +17,12 @@ class AppImage(models.Model):
 
     create_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return self.img.name
+
+    class Meta:
+        verbose_name = verbose_name_plural = '图片'
+
 
 class User(AbstractUser):
     phone_number = models.CharField(max_length=191, blank=True, null=True, verbose_name="手机号码", unique=True)
@@ -41,6 +47,9 @@ class Merchant(models.Model):
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return self.name
+
     class Meta:
         verbose_name = verbose_name_plural = "商户"
 
@@ -52,6 +61,9 @@ class MerchantProductsTab(models.Model):
     merchant = models.ForeignKey(Merchant, related_name='tabs', on_delete=models.CASCADE, verbose_name='商户')
     name = models.CharField(max_length=191, verbose_name="类目名")
     rank = models.IntegerField(verbose_name='排序(大->小)', default=999)
+
+    def __str__(self):
+        return self.name
 
     class Meta:
         verbose_name = verbose_name_plural = "类目"
@@ -70,6 +82,12 @@ class Product(models.Model):
 
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        if self.unit_desc:
+            return f'{self.name} {self.unit_desc}'
+        else:
+            return self.name
 
     class Meta:
         verbose_name = verbose_name_plural = "商品"
@@ -106,7 +124,7 @@ class Order(models.Model):
     id = models.CharField(primary_key=True, max_length=64, default=get_order_id, editable=False)
     user = models.ForeignKey(User, verbose_name="用户", related_name='orders', on_delete=models.CASCADE)
     status = models.CharField(max_length=191, choices=STATUS_CHOICES)
-    price_total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name="订单总价")
+    price_total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name="订单总价", blank=True, null=False)
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
 
@@ -119,6 +137,9 @@ class Order(models.Model):
 
         super().save(force_insert, force_update, using, update_fields)
 
+    def __str__(self):
+        return f"订单号: {self.id}"
+
     class Meta:
         verbose_name = verbose_name_plural = "订单"
 
@@ -126,11 +147,15 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, verbose_name='订单', related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, verbose_name='商品', related_name='+', on_delete=models.SET_NULL, null=True, blank=False)
-    price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="实际单价")
+    price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="实际单价", null=False, blank=True)
     quantity = models.IntegerField(verbose_name='数量')
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        if self.price is None:
+            self.price = self.product.price
+
         super().save(force_insert, force_update, using, update_fields)
+
         # 触发order重新计算总价
         self.order.save()
 
