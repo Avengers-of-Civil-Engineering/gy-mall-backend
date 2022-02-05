@@ -1,3 +1,115 @@
+from django.utils import timezone
+from django.contrib.auth.models import AbstractUser
 from django.db import models
+import uuid
+from random import randint
 
-# Create your models here.
+
+class AppImage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid1, editable=False)
+
+    width = models.IntegerField(null=True, blank=True)
+    height = models.IntegerField(null=True, blank=True)
+    img = models.ImageField(width_field='width', height_field='height')
+
+    create_at = models.DateTimeField(auto_now_add=True)
+
+
+class User(AbstractUser):
+    phone_number = models.CharField(max_length=191, blank=True, null=True, verbose_name="手机号码")
+    avatar = models.ForeignKey(AppImage, on_delete=models.SET_NULL, db_constraint=False, null=True, blank=True)
+
+
+class Merchant(models.Model):
+    """
+    商户
+    """
+
+    name = models.CharField(max_length=191, verbose_name="商户名")
+    img = models.ForeignKey(AppImage, related_name='+', db_constraint=False, on_delete=models.SET_NULL, null=True, blank=True)
+
+    express_limit = models.IntegerField(verbose_name='起送运费')
+    express_price = models.IntegerField(verbose_name='基础运费')
+
+    sales = models.IntegerField(verbose_name='销量')
+
+    slogan = models.CharField(max_length=191, blank=True, verbose_name='促销文字说明')
+
+    create_at = models.DateTimeField(auto_now_add=True)
+    update_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = verbose_name_plural = "商户"
+
+
+class MerchantProductsTab(models.Model):
+    """
+    商户的商品类目
+    """
+    merchant = models.ForeignKey(Merchant, related_name='tabs', on_delete=models.CASCADE, verbose_name='商户')
+    name = models.CharField(max_length=191, verbose_name="类目名")
+
+    class Meta:
+        verbose_name = verbose_name_plural = "类目"
+
+
+class Product(models.Model):
+    merchant = models.ForeignKey(Merchant, related_name='products', on_delete=models.CASCADE, verbose_name='商户')
+    tab = models.ForeignKey(MerchantProductsTab, related_name='products', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='所属类目')
+
+    name = models.CharField(max_length=191, verbose_name="商品名")
+    unit_desc = models.CharField(max_length=191, verbose_name="单位文字")
+    old_price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="初始单价")
+    price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="当前单价")
+    sales = models.IntegerField(verbose_name='销量')
+
+    create_at = models.DateTimeField(auto_now_add=True)
+    update_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = verbose_name_plural = "商品"
+
+
+def get_order_id():
+    # TODO: 主键冲突检测
+    dt_now = timezone.localtime(timezone.now())
+    rand_int = randint(1000, 9999)
+    dt_str = dt_now.strftime('%Y%m%d%H%M%S%f')[:-3]
+    return '%s%04d' % (dt_str, rand_int)
+
+
+class Order(models.Model):
+    """
+    订单
+    """
+    STATUS_CREATING = 'creating'
+    STATUS_WAITING_TO_PAY = 'waiting_to_pay'
+    STATUS_PAID_SUCCEED = 'paid_succeed'
+    STATUS_UNPAID_CLOSED = 'unpaid_closed'
+    STATUS_SENDING = 'sending'
+    STATUS_FINISHED = 'finished'
+
+    STATUS_CHOICES = (
+        (STATUS_CREATING, '创建中'),
+        (STATUS_WAITING_TO_PAY, '待支付'),
+        (STATUS_PAID_SUCCEED, '支付成功'),
+        (STATUS_UNPAID_CLOSED, '未支付关闭'),
+        (STATUS_SENDING, '快递发送中'),
+        (STATUS_FINISHED, '已完成'),
+    )
+
+    id = models.CharField(primary_key=True, max_length=64, default=get_order_id, editable=False)
+    status = models.CharField(choices=STATUS_CHOICES)
+    price_total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name="订单总价")
+    create_at = models.DateTimeField(auto_now_add=True)
+    update_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = verbose_name_plural = "订单"
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, verbose_name='订单', related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, verbose_name='商品', related_name='+', on_delete=models.SET_NULL, null=True, blank=False)
+    price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="实际单价")
+    quantity = models.IntegerField(verbose_name='数量')

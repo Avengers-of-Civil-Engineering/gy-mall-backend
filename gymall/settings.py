@@ -108,6 +108,10 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+SESSION_COOKIE_NAME = "gymall_sessionid"
+
+AUTH_USER_MODEL = "mall.User"
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
