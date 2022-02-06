@@ -6,7 +6,8 @@ def read_env():
         DEBUG=(bool, False),
         LOG_DB_SQL=(bool, False),
         SECRET_KEY=(str, 'secret'),
-        DATABASE_URL=(str, '')
+        DATABASE_URL=(str, ''),
+        ADMIN_URL_SUFFIX=(str, 'unsafe'),
     )
 
     env.read_env()

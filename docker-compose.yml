@@ -6,9 +6,9 @@ services:
     restart: always
     volumes:
       - './gymall/.env:/app/gy-mall-backend/gymall/.env:ro'
-      - './logs:/app/gy-mall-backend/gymall/logs'
-      - './media:/app/gy-mall-backend/gymall/media'
-      - './static:/app/gy-mall-backend/gymall/static'
+      - './logs:/app/gy-mall-backend/logs'
+      - './media:/app/gy-mall-backend/media'
+      - './static:/app/gy-mall-backend/static'
     ports:
       - '8000:8000'
 
