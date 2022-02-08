@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from django.urls import include, path
 from rest_framework.authtoken import views as authtoken_views
 
@@ -10,6 +12,8 @@ router.register(r'merchant-products-tabs', views.MerchantProductsTabViewSet)
 router.register(r'products', views.ProductViewSet)
 router.register(r'orders', views.OrderViewSet)
 router.register(r'addresses', views.UserExpressAddressViewSet)
+
+pprint(router.get_urls())
 
 urlpatterns = [
     path('', include(router.urls)),

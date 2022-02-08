@@ -62,6 +62,18 @@ class ProductSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class UserExpressAddressSerializer(serializers.HyperlinkedModelSerializer):
+
+    def create(self, validated_data):
+        creator = self.context['request'].user
+        address = UserExpressAddress(
+            creator=creator,
+            name=validated_data['name'],
+            phone_number=validated_data['phone_number'],
+            address_full_txt=validated_data['address_full_txt'],
+        )
+        address.save()
+        return address
+
     class Meta:
         model = UserExpressAddress
         fields = (

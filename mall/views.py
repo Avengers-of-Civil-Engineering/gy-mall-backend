@@ -6,7 +6,8 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from .models import Merchant, MerchantProductsTab, Product, Order, UserExpressAddress
-from .serializers import MerchantSerializer, MerchantProductsTabSerializer, ProductSerializer, OrderSerializer, OrderUpdateStatusSerializer
+from .serializers import MerchantSerializer, MerchantProductsTabSerializer, ProductSerializer, OrderSerializer, OrderUpdateStatusSerializer, \
+    UserExpressAddressSerializer
 
 
 class MerchantViewSet(ModelViewSet):
@@ -115,7 +116,7 @@ class UserExpressAddressViewSet(ModelViewSet):
     )
 
     queryset = UserExpressAddress.objects.all()
-    serializer_class = OrderSerializer
+    serializer_class = UserExpressAddressSerializer
 
     def get_queryset(self):
         qs = super().get_queryset()

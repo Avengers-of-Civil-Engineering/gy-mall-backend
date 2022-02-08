@@ -72,3 +72,22 @@ class TestOrderAPI(APITestCase):
         resp2 = self.client.post(url, data_update_status, format='json')
         print("POST data return:", resp2.data)
         self.assertEqual(resp2.data['status'], Order.STATUS_PAID_SUCCEED)
+
+
+class TestAddressAPI(APITestCase):
+    def setUp(self) -> None:
+        generate_mock_data()
+        self.client.login(username='aweffr', password='unsafe')
+
+    def test_address_create(self):
+        url = reverse('userexpressaddress-list')
+
+        data = {
+            "name": "小浣熊",
+            "phone_number": "123456890",
+            "address_full_txt": "太阳市月球村村长之家的楼梯间"
+        }
+        print("POST url=", url)
+        print("POST data=", json.dumps(data, indent=2, ensure_ascii=False))
+        resp = self.client.post(url, data, format='json')
+        print("POST data return:", json.dumps(resp.data, indent=2, ensure_ascii=False))
