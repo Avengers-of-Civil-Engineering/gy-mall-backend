@@ -44,8 +44,9 @@ class MerchantViewSet(ModelViewSet):
     def products(self, request: Request, pk=None):
         merchant = self.get_object()
         qs = Product.objects.select_related('merchant', 'tab').filter(merchant=merchant)
-        if request.query_params.get('tab'):
-            qs = qs.filter(tab__slug__iexact=request.query_params.get('tab'))
+        tab_param = request.query_params.get('tab')
+        if tab_param and tab_param != 'all':
+            qs = qs.filter(tab__slug__iexact=tab_param)
         return Response(ProductSerializer(instance=qs.all(), many=True, context={'request': request}).data)
 
 

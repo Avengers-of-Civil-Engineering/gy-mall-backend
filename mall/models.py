@@ -48,6 +48,19 @@ class Merchant(models.Model):
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
 
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        super().save(force_insert, force_update, using, update_fields)
+
+        tab_all = self.tabs.filter(slug='all').first()
+        if tab_all is None:
+            tab = MerchantProductsTab(
+                merchant=self,
+                name='全部',
+                slug='all',
+                rank=9999
+            )
+            tab.save()
+
     def __str__(self):
         return self.name
 
