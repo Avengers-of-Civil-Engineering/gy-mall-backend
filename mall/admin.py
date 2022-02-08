@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Merchant, Product, MerchantProductsTab, AppImage, Order
+from .models import Merchant, Product, MerchantProductsTab, AppImage, Order, UserExpressAddress
 from .models import OrderItem
 
 
@@ -28,6 +28,11 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(MerchantProductsTab)
 class MerchantProductsTabAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(UserExpressAddress)
+class UserExpressAddressAdmin(admin.ModelAdmin):
     pass
 
 

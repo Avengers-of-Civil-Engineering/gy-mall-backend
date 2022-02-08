@@ -29,6 +29,24 @@ class User(AbstractUser):
     avatar = models.ForeignKey(AppImage, on_delete=models.SET_NULL, db_constraint=False, null=True, blank=True)
 
 
+class UserExpressAddress(models.Model):
+    """
+    收货地址
+    """
+    creator = models.ForeignKey('mall.User', on_delete=models.SET_NULL, null=True, blank=False, verbose_name='创建者')
+    name = models.CharField(max_length=191, blank=False, null=False, verbose_name='收货人姓名')
+    phone_number = models.CharField(max_length=191, blank=False, null=False, verbose_name='收货人手机号')
+    address_full_txt = models.TextField(verbose_name='收货人地址')
+    create_at = models.DateTimeField(auto_now_add=True)
+    update_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.name} {self.phone_number} {self.address_full_txt}'
+
+    class Meta:
+        verbose_name = verbose_name_plural = '收货地址'
+
+
 class Merchant(models.Model):
     """
     商户
@@ -145,6 +163,7 @@ class Order(models.Model):
 
     id = models.CharField(primary_key=True, max_length=64, default=get_order_id, editable=False)
     user = models.ForeignKey(User, verbose_name="用户", related_name='orders', on_delete=models.CASCADE)
+    address = models.ForeignKey('mall.UserExpressAddress', verbose_name='收货地址', related_name='+', on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=191, choices=STATUS_CHOICES)
     price_total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name="订单总价", blank=True, null=False)
     create_at = models.DateTimeField(auto_now_add=True)
@@ -164,6 +183,7 @@ class Order(models.Model):
 
     class Meta:
         verbose_name = verbose_name_plural = "订单"
+        ordering = ("-create_at",)
 
 
 class OrderItem(models.Model):
@@ -173,6 +193,9 @@ class OrderItem(models.Model):
     quantity = models.IntegerField(verbose_name='数量')
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        """
+        注意: 为了避免order_item创建时反复触发order的save, order创建时order_item应该采用 object.create 的方式
+        """
         if self.price is None:
             self.price = self.product.price
 

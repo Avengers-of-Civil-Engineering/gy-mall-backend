@@ -5,7 +5,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.files.images import ImageFile
 from .models import (
-    AppImage, User, Merchant, MerchantProductsTab, Product, Order, OrderItem
+    AppImage, User, Merchant, MerchantProductsTab, Product, Order, OrderItem, UserExpressAddress
 )
 
 
@@ -42,6 +42,17 @@ def gen_users():
     u2.phone_number = '15086886667'
     u2.is_superuser = u2.is_staff = True
     u2.save()
+
+
+def gen_express_address():
+    u1 = User.objects.get(username='aweffr')
+    addr = UserExpressAddress(
+        creator=u1,
+        name='小浣熊',
+        phone_number='123456789',
+        address_full_txt='太阳市月亮村起飞起飞',
+    )
+    addr.save()
 
 
 def gen_merchants():
@@ -167,6 +178,8 @@ def generate_mock_data():
     """
 
     gen_users()
+
+    gen_express_address()
 
     gen_merchants()
 

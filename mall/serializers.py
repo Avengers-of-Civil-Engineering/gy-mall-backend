@@ -1,4 +1,8 @@
-from .models import Merchant, Product, MerchantProductsTab, AppImage, Order, OrderItem
+import decimal
+
+import django.db.transaction
+
+from .models import Merchant, Product, MerchantProductsTab, AppImage, Order, OrderItem, UserExpressAddress
 from rest_framework import serializers
 
 
@@ -54,4 +58,89 @@ class ProductSerializer(serializers.HyperlinkedModelSerializer):
             'sales',
             'create_at',
             'update_at',
+        )
+
+
+class UserExpressAddressSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = UserExpressAddress
+        fields = (
+            'creator_id',
+            'name',
+            'phone_number',
+            'address_full_txt',
+            'create_at',
+            'update_at',
+        )
+
+
+class OrderItemSerializer(serializers.HyperlinkedModelSerializer):
+    product_id = serializers.IntegerField()
+    product_desc = serializers.SerializerMethodField()
+
+    def get_product_desc(self, obj: OrderItem):
+        return str(obj.product)
+
+    class Meta:
+        model = OrderItem
+        fields = (
+            'id',
+            'product_id',
+            'product_desc',  # read only
+            'price',
+            'quantity',
+        )
+        read_only_fields = (
+            'product_desc',
+            'price',
+        )
+
+
+class OrderSerializer(serializers.HyperlinkedModelSerializer):
+    items = OrderItemSerializer(many=True)
+    address = UserExpressAddressSerializer(read_only=True)
+    address_id = serializers.IntegerField()
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        with django.db.transaction.atomic():
+            order = Order.objects.create(
+                user=user,
+                address_id=validated_data['address_id'],
+                status=Order.STATUS_WAITING_TO_PAY,
+                price_total=decimal.Decimal('-1'),
+            )
+            for item in validated_data['items']:
+                product = Product.objects.get(pk=item['product_id'])
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    price=product.price,
+                    quantity=item['quantity']
+                )
+            order.save()
+
+            return order
+
+    def update(self, instance, validated_data):
+        raise NotImplementedError('update not implemented')
+
+    class Meta:
+        model = Order
+        fields = (
+            'id',
+            'user_id',
+            'address',
+            'address_id',
+            'status',
+            'price_total',
+            'create_at',
+            'update_at',
+            'items',
+        )
+        read_only_fields = (
+            'id',
+            'address',
+            'status',
+            'price_total',
         )

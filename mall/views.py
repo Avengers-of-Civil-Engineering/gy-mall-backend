@@ -1,12 +1,12 @@
-from django.shortcuts import render
+from rest_framework import authentication
+from rest_framework import permissions
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from rest_framework import permissions
-from rest_framework import authentication
-from .models import Merchant, MerchantProductsTab, Product
-from .serializers import AppImageSerializer, MerchantSerializer, MerchantProductsTabSerializer, ProductSerializer
+
+from .models import Merchant, MerchantProductsTab, Product, Order, UserExpressAddress
+from .serializers import MerchantSerializer, MerchantProductsTabSerializer, ProductSerializer, OrderSerializer
 
 
 class MerchantViewSet(ModelViewSet):
@@ -76,3 +76,39 @@ class ProductViewSet(ModelViewSet):
 
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+
+
+class OrderViewSet(ModelViewSet):
+    authentication_classes = (
+        authentication.SessionAuthentication,
+        authentication.TokenAuthentication,
+    )
+    permission_classes = (
+        permissions.IsAuthenticated,
+    )
+
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        qs = qs.filter(user=self.request.user)
+        return qs
+
+
+class UserExpressAddressViewSet(ModelViewSet):
+    authentication_classes = (
+        authentication.SessionAuthentication,
+        authentication.TokenAuthentication,
+    )
+    permission_classes = (
+        permissions.IsAuthenticated,
+    )
+
+    queryset = UserExpressAddress.objects.all()
+    serializer_class = OrderSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        qs = qs.filter(creator=self.request.user)
+        return qs
