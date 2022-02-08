@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from .models import Merchant, MerchantProductsTab, Product, Order, UserExpressAddress
-from .serializers import MerchantSerializer, MerchantProductsTabSerializer, ProductSerializer, OrderSerializer
+from .serializers import MerchantSerializer, MerchantProductsTabSerializer, ProductSerializer, OrderSerializer, OrderUpdateStatusSerializer
 
 
 class MerchantViewSet(ModelViewSet):
@@ -94,6 +94,15 @@ class OrderViewSet(ModelViewSet):
         qs = super().get_queryset()
         qs = qs.filter(user=self.request.user)
         return qs
+
+    @action(methods=['POST', ], detail=True)
+    def update_status(self, request: Request, pk=None):
+        order: Order = self.get_object()
+        serializer = OrderUpdateStatusSerializer(data=request.data)
+        if serializer.is_valid():
+            order.status = serializer.validated_data['status']
+            order.save()
+        return Response(OrderSerializer(instance=order).data)
 
 
 class UserExpressAddressViewSet(ModelViewSet):

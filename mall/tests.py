@@ -6,7 +6,7 @@ from typing import List
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APITestCase
-from .models import AppImage
+from .models import AppImage, Order
 from .generate_mock_data import generate_mock_data
 
 
@@ -58,3 +58,17 @@ class TestOrderAPI(APITestCase):
 
         self.assertEqual(resp.data['user_id'], 1)
         self.assertEqual(resp.data['address']['address_full_txt'], "太阳市月亮村起飞起飞")
+        order_id = resp.data['id']
+        print(f"order_id = {order_id}")
+        self.assertEqual(len(order_id), 21)
+
+        data_update_status = {
+            'order_id': order_id,
+            'status': Order.STATUS_PAID_SUCCEED,
+        }
+
+        url = reverse('order-update-status', kwargs={'pk': order_id})
+
+        resp2 = self.client.post(url, data_update_status, format='json')
+        print("POST data return:", resp2.data)
+        self.assertEqual(resp2.data['status'], Order.STATUS_PAID_SUCCEED)

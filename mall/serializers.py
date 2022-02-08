@@ -74,6 +74,12 @@ class UserExpressAddressSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
+# noinspection PyAbstractClass
+class OrderUpdateStatusSerializer(serializers.Serializer):
+    order_id = serializers.IntegerField()
+    status = serializers.ChoiceField(Order.STATUS_CHOICES)
+
+
 class OrderItemSerializer(serializers.HyperlinkedModelSerializer):
     product_id = serializers.IntegerField()
     product_desc = serializers.SerializerMethodField()
