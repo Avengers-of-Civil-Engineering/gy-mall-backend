@@ -77,6 +77,7 @@ class UserExpressAddressSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = UserExpressAddress
         fields = (
+            'id',
             'creator_id',
             'name',
             'phone_number',
