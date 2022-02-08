@@ -77,15 +77,25 @@ class UserExpressAddressSerializer(serializers.HyperlinkedModelSerializer):
 class OrderItemSerializer(serializers.HyperlinkedModelSerializer):
     product_id = serializers.IntegerField()
     product_desc = serializers.SerializerMethodField()
+    product_merchant_id = serializers.SerializerMethodField()
+    product_merchant_name = serializers.SerializerMethodField()
 
     def get_product_desc(self, obj: OrderItem):
         return str(obj.product)
+
+    def get_product_merchant_id(self, obj: OrderItem):
+        return obj.product.merchant.id
+
+    def get_product_merchant_name(self, obj: OrderItem):
+        return obj.product.merchant.name
 
     class Meta:
         model = OrderItem
         fields = (
             'id',
             'product_id',
+            'product_merchant_id',
+            'product_merchant_name',
             'product_desc',  # read only
             'price',
             'quantity',
