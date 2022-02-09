@@ -176,6 +176,8 @@ class OrderStatus:
         (STATUS_FINISHED, '已完成'),
     )
 
+    STATUS_CHOICES_DICT = dict(STATUS_CHOICES)
+
 
 class OrderCollection(models.Model):
     """
@@ -187,6 +189,10 @@ class OrderCollection(models.Model):
     price_total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name="订单总价", blank=True, null=False)
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def status_txt(self):
+        return OrderStatus.STATUS_CHOICES_DICT[self.status]
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         acc = decimal.Decimal(0.0)
@@ -212,6 +218,10 @@ class Order(models.Model):
     price_total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name="订单总价", blank=True, null=False)
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def status_txt(self):
+        return OrderStatus.STATUS_CHOICES_DICT[self.status]
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         # 重新计算总价

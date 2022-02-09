@@ -203,6 +203,7 @@ class OrderSerializer(serializers.HyperlinkedModelSerializer):
             'merchant',
             'merchant_id',
             'status',
+            'status_txt',
             'price_total',
             'create_at',
             'update_at',
@@ -213,6 +214,7 @@ class OrderSerializer(serializers.HyperlinkedModelSerializer):
             'address',
             'merchant',
             'status',
+            'status_txt',
             'price_total',
         )
 
@@ -226,6 +228,7 @@ class OrderCollectionSerializer(serializers.ModelSerializer):
             'id',
             'user_id',
             'status',
+            'status_txt',
             'orders',
             'price_total',
             'create_at',
@@ -233,6 +236,7 @@ class OrderCollectionSerializer(serializers.ModelSerializer):
         )
         read_only_fields = (
             'status',
+            'status_txt',
             'price_total',
         )
 
