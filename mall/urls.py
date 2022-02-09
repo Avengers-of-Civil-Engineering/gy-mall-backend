@@ -11,6 +11,7 @@ router.register(r'merchants', views.MerchantViewSet)
 router.register(r'merchant-products-tabs', views.MerchantProductsTabViewSet)
 router.register(r'products', views.ProductViewSet)
 router.register(r'orders', views.OrderViewSet)
+router.register(r'order-collections', views.OrderCollectionViewSet)
 router.register(r'addresses', views.UserExpressAddressViewSet)
 
 pprint(router.get_urls())

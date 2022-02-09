@@ -1,9 +1,10 @@
 import decimal
+from typing import Optional
 
 import django.db.transaction
 
-from .models import Merchant, Product, MerchantProductsTab, AppImage, Order, OrderItem, UserExpressAddress
-from rest_framework import serializers
+from .models import Merchant, Product, MerchantProductsTab, AppImage, Order, OrderItem, UserExpressAddress, OrderStatus, OrderCollection, User
+from rest_framework import serializers, exceptions
 
 
 class AppImageSerializer(serializers.ModelSerializer):
@@ -90,7 +91,13 @@ class UserExpressAddressSerializer(serializers.HyperlinkedModelSerializer):
 # noinspection PyAbstractClass
 class OrderUpdateStatusSerializer(serializers.Serializer):
     order_id = serializers.IntegerField()
-    status = serializers.ChoiceField(Order.STATUS_CHOICES)
+    status = serializers.ChoiceField(OrderStatus.STATUS_CHOICES)
+
+
+# noinspection PyAbstractClass
+class OrderCollectionUpdateStatusSerializer(serializers.Serializer):
+    order_collection_id = serializers.IntegerField()
+    status = serializers.ChoiceField(OrderStatus.STATUS_CHOICES)
 
 
 class OrderItemSerializer(serializers.HyperlinkedModelSerializer):
@@ -135,17 +142,37 @@ class OrderItemSerializer(serializers.HyperlinkedModelSerializer):
 
 class OrderSerializer(serializers.HyperlinkedModelSerializer):
     items = OrderItemSerializer(many=True)
+    merchant = MerchantSerializer(read_only=True)
+    merchant_id = serializers.IntegerField(required=True)
     address = UserExpressAddressSerializer(read_only=True)
-    address_id = serializers.IntegerField()
+    address_id = serializers.IntegerField(required=True)
 
-    def create(self, validated_data):
-        user = self.context['request'].user
+    @classmethod
+    def create_order(cls, current_user: User, validated_data, order_collection: Optional[OrderCollection] = None):
+        if current_user.is_anonymous:
+            raise exceptions.PermissionDenied
+
+        address_id = validated_data['address_id']
+        merchant_id = validated_data['merchant_id']
+
+        try:
+            address = UserExpressAddress.objects.get(pk=address_id)
+        except UserExpressAddress.DoesNotExist:
+            raise serializers.ValidationError(f"address_id = {address_id} does not exist!")
+
+        try:
+            merchant = Merchant.objects.get(pk=merchant_id)
+        except Merchant.DoesNotExist:
+            raise serializers.ValidationError(f"merchant_id = {merchant_id} does not exist!")
+
         with django.db.transaction.atomic():
             order = Order.objects.create(
-                user=user,
-                address_id=validated_data['address_id'],
-                status=Order.STATUS_WAITING_TO_PAY,
+                user=current_user,
+                address=address,
+                merchant=merchant,
+                status=OrderStatus.STATUS_WAITING_TO_PAY,
                 price_total=decimal.Decimal('-1'),
+                order_collection=order_collection,
             )
             for item in validated_data['items']:
                 product = Product.objects.get(pk=item['product_id'])
@@ -159,6 +186,10 @@ class OrderSerializer(serializers.HyperlinkedModelSerializer):
 
             return order
 
+    def create(self, validated_data):
+        user = self.context['request'].user
+        return self.create_order(current_user=user, validated_data=validated_data)
+
     def update(self, instance, validated_data):
         raise NotImplementedError('update not implemented')
 
@@ -169,6 +200,8 @@ class OrderSerializer(serializers.HyperlinkedModelSerializer):
             'user_id',
             'address',
             'address_id',
+            'merchant',
+            'merchant_id',
             'status',
             'price_total',
             'create_at',
@@ -178,6 +211,47 @@ class OrderSerializer(serializers.HyperlinkedModelSerializer):
         read_only_fields = (
             'id',
             'address',
+            'merchant',
             'status',
             'price_total',
         )
+
+
+class OrderCollectionSerializer(serializers.ModelSerializer):
+    orders = OrderSerializer(many=True)
+
+    class Meta:
+        model = OrderCollection
+        fields = (
+            'id',
+            'user_id',
+            'status',
+            'orders',
+            'price_total',
+            'create_at',
+            'update_at',
+        )
+        read_only_fields = (
+            'status',
+            'price_total',
+        )
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+
+        order_collection = OrderCollection.objects.create(
+            user=user,
+            status=OrderStatus.STATUS_WAITING_TO_PAY,
+            price_total=decimal.Decimal('-1'),
+        )
+
+        for _order in validated_data['orders']:
+            order = OrderSerializer.create_order(
+                current_user=user,
+                validated_data=_order,
+                order_collection=order_collection
+            )
+
+        order_collection.save()
+
+        return order_collection

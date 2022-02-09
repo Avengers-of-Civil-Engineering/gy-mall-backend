@@ -133,17 +133,32 @@ class Product(models.Model):
         verbose_name = verbose_name_plural = "商品"
 
 
+ID_GENERATE_RETRY_CNT = 10
+local_order_id_set = set()
+
+
 def get_order_id():
-    # TODO: 主键冲突检测
-    dt_now = timezone.localtime(timezone.now())
-    rand_int = randint(1000, 9999)
-    dt_str = dt_now.strftime('%Y%m%d%H%M%S%f')[:-3]
-    return '%s%04d' % (dt_str, rand_int)
+    # TODO: 跨进程主键冲突检测
+
+    if len(local_order_id_set) >= 10000:  # 防一手内存泄漏
+        local_order_id_set.clear()
+
+    for i in range(ID_GENERATE_RETRY_CNT):
+        dt_now = timezone.localtime(timezone.now())
+        rand_int = randint(1000, 9999)
+        dt_str = dt_now.strftime('%Y%m%d%H%M%S%f')[:-3]
+        candidate = '%s%04d' % (dt_str, rand_int)
+        if candidate in local_order_id_set:
+            continue
+        else:
+            local_order_id_set.add(candidate)
+            return candidate
+    raise RuntimeError(f"get_order_id fail, retry more than {ID_GENERATE_RETRY_CNT} times")
 
 
-class Order(models.Model):
+class OrderStatus:
     """
-    订单
+    订单状态
     """
     STATUS_CREATING = 'creating'
     STATUS_WAITING_TO_PAY = 'waiting_to_pay'
@@ -161,10 +176,39 @@ class Order(models.Model):
         (STATUS_FINISHED, '已完成'),
     )
 
+
+class OrderCollection(models.Model):
+    """
+    订单集合, 用于购物车一次性下单好几家店铺的情况
+    """
+    id = models.CharField(primary_key=True, max_length=64, default=get_order_id, editable=False)
+    user = models.ForeignKey(User, verbose_name="用户", related_name='order_collections', on_delete=models.CASCADE)
+    status = models.CharField(max_length=191, choices=OrderStatus.STATUS_CHOICES)
+    price_total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name="订单总价", blank=True, null=False)
+    create_at = models.DateTimeField(auto_now_add=True)
+    update_at = models.DateTimeField(auto_now=True)
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        acc = decimal.Decimal(0.0)
+        for order in self.orders.all():
+            acc = acc + order.price_total
+        self.price_total = acc
+
+        super().save(force_insert, force_update, using, update_fields)
+        self.orders.update(status=self.status)
+
+
+class Order(models.Model):
+    """
+    订单
+    """
     id = models.CharField(primary_key=True, max_length=64, default=get_order_id, editable=False)
     user = models.ForeignKey(User, verbose_name="用户", related_name='orders', on_delete=models.CASCADE)
+    order_collection = models.ForeignKey('mall.OrderCollection', verbose_name='订单集合',
+                                         null=True, blank=True, on_delete=models.SET_NULL, related_name='orders')
+    merchant = models.ForeignKey('mall.Merchant', verbose_name='商户', blank=True, null=True, on_delete=models.SET_NULL, related_name='+')
     address = models.ForeignKey('mall.UserExpressAddress', verbose_name='收货地址', related_name='+', on_delete=models.SET_NULL, null=True, blank=True)
-    status = models.CharField(max_length=191, choices=STATUS_CHOICES)
+    status = models.CharField(max_length=191, choices=OrderStatus.STATUS_CHOICES)
     price_total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name="订单总价", blank=True, null=False)
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
@@ -177,6 +221,9 @@ class Order(models.Model):
         self.price_total = acc
 
         super().save(force_insert, force_update, using, update_fields)
+
+        if self.order_collection is not None:
+            self.order_collection.save()
 
     def __str__(self):
         return f"订单号: {self.id}"

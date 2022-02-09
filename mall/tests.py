@@ -6,8 +6,9 @@ from typing import List
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APITestCase
-from .models import AppImage, Order
+from .models import AppImage, Order, OrderStatus
 from .generate_mock_data import generate_mock_data
+from random import shuffle
 
 
 # Create your tests here.
@@ -21,36 +22,40 @@ class TestGenerateMockData(TestCase):
             os.remove(image.img.path)
 
 
+def _generate_test_order_by_merchant(username, merchant_name):
+    from .models import User, Merchant, UserExpressAddress, Product
+    u = User.objects.get(username=username)
+    m = Merchant.objects.get(name=merchant_name)
+    address = UserExpressAddress.objects.filter(creator=u).first()
+
+    products: List[Product] = list(Product.objects.filter(merchant=m).all())
+    shuffle(products)
+    products = products[:2]
+
+    items = [
+        {'product_id': p.id, 'quantity': idx + 1}
+        for idx, p in enumerate(products)
+    ]
+
+    payload = {
+        'address_id': address.id,
+        'merchant_id': m.id,
+        'items': items
+    }
+    return payload
+
+
 class TestOrderAPI(APITestCase):
     def setUp(self) -> None:
         generate_mock_data()
         self.client.login(username='aweffr', password='unsafe')
 
     def test_order_create(self):
-        from .models import User, Merchant, UserExpressAddress, Product
-
-        u = User.objects.get(username='aweffr')
-        m = Merchant.objects.get(name='沃尔玛')
-
-        address = UserExpressAddress.objects.filter(creator=u).first()
-
-        products: List[Product] = list(Product.objects.filter(merchant=m).all())
-
+        payload = _generate_test_order_by_merchant(username='aweffr', merchant_name='沃尔玛')
         url = reverse('order-list')
-
-        items = [
-            {'product_id': p.id, 'quantity': idx + 1}
-            for idx, p in enumerate(products)
-        ]
-
-        data = {
-            'address_id': address.id,
-            'items': items
-        }
-
         print("POST url=", url)
-        print("POST data=", json.dumps(data, indent=2, ensure_ascii=False))
-        resp = self.client.post(url, data, format='json')
+        print("POST data=", json.dumps(payload, indent=2, ensure_ascii=False))
+        resp = self.client.post(url, payload, format='json')
 
         ret_data = json.dumps(resp.data, indent=2, ensure_ascii=False)
 
@@ -64,14 +69,62 @@ class TestOrderAPI(APITestCase):
 
         data_update_status = {
             'order_id': order_id,
-            'status': Order.STATUS_PAID_SUCCEED,
+            'status': OrderStatus.STATUS_PAID_SUCCEED,
         }
+        url2 = reverse('order-update-status', kwargs={'pk': order_id})
+        print("POST url2=", url2, 'payload=', json.dumps(data_update_status, indent=2, ensure_ascii=False))
+        resp2 = self.client.post(url2, data_update_status, format='json')
+        print("POST url2 data return:", json.dumps(resp2.data, indent=2, ensure_ascii=False))
+        self.assertEqual(resp2.data['status'], OrderStatus.STATUS_PAID_SUCCEED)
 
-        url = reverse('order-update-status', kwargs={'pk': order_id})
+    def tearDown(self) -> None:
+        for image in AppImage.objects.all():
+            print(f'removing {image.img.path}')
+            os.remove(image.img.path)
 
-        resp2 = self.client.post(url, data_update_status, format='json')
-        print("POST data return:", resp2.data)
-        self.assertEqual(resp2.data['status'], Order.STATUS_PAID_SUCCEED)
+
+class TestOrderCollectionAPI(APITestCase):
+    def setUp(self) -> None:
+        generate_mock_data()
+        self.client.login(username='aweffr', password='unsafe')
+
+    def test_order_collection_create(self):
+        from .models import User, Merchant, UserExpressAddress, Product
+        u = User.objects.get(username='aweffr')
+        order1 = _generate_test_order_by_merchant(username='aweffr', merchant_name='沃尔玛')
+        order2 = _generate_test_order_by_merchant(username='aweffr', merchant_name='山姆会员店')
+        url = reverse("ordercollection-list")
+
+        payload = {
+            'user_id': u.id,
+            'orders': [
+                order1,
+                order2,
+            ]
+        }
+        print("POST url=", url)
+        print("POST data=", json.dumps(payload, indent=2, ensure_ascii=False))
+        resp = self.client.post(url, payload, format='json')
+
+        ret_data = json.dumps(resp.data, indent=2, ensure_ascii=False)
+
+        print("POST data return:", ret_data)
+        order_collection_id = resp.data['id']
+
+        url2 = reverse('ordercollection-update-status', kwargs={'pk': order_collection_id})
+        data_update_status = {
+            'order_collection_id': order_collection_id,
+            'status': OrderStatus.STATUS_PAID_SUCCEED,
+        }
+        print("POST url2=", url2, 'payload=', json.dumps(data_update_status, indent=2, ensure_ascii=False))
+        resp2 = self.client.post(url2, data_update_status, format='json')
+        print("POST url2 data return:", json.dumps(resp2.data, indent=2, ensure_ascii=False))
+        self.assertEqual(resp2.data['status'], OrderStatus.STATUS_PAID_SUCCEED)
+
+    def tearDown(self) -> None:
+        for image in AppImage.objects.all():
+            print(f'removing {image.img.path}')
+            os.remove(image.img.path)
 
 
 class TestAddressAPI(APITestCase):

@@ -3,11 +3,12 @@ from rest_framework import permissions
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
+from rest_framework import mixins
 
-from .models import Merchant, MerchantProductsTab, Product, Order, UserExpressAddress
+from .models import Merchant, MerchantProductsTab, Product, Order, UserExpressAddress, OrderCollection
 from .serializers import MerchantSerializer, MerchantProductsTabSerializer, ProductSerializer, OrderSerializer, OrderUpdateStatusSerializer, \
-    UserExpressAddressSerializer
+    UserExpressAddressSerializer, OrderCollectionSerializer, OrderCollectionUpdateStatusSerializer
 
 
 class MerchantViewSet(ModelViewSet):
@@ -104,11 +105,11 @@ class OrderViewSet(ModelViewSet):
     @action(methods=['POST', ], detail=True)
     def update_status(self, request: Request, pk=None):
         order: Order = self.get_object()
-        serializer = OrderUpdateStatusSerializer(data=request.data)
-        if serializer.is_valid():
+        serializer = OrderUpdateStatusSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid(raise_exception=True):
             order.status = serializer.validated_data['status']
             order.save()
-        return Response(OrderSerializer(instance=order).data)
+        return Response(OrderSerializer(instance=order, context={'request': request}).data)
 
 
 class UserExpressAddressViewSet(ModelViewSet):
@@ -127,3 +128,25 @@ class UserExpressAddressViewSet(ModelViewSet):
         qs = super().get_queryset()
         qs = qs.filter(creator=self.request.user)
         return qs
+
+
+class OrderCollectionViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.ListModelMixin, GenericViewSet):
+    authentication_classes = (
+        authentication.SessionAuthentication,
+        authentication.TokenAuthentication,
+    )
+    permission_classes = (
+        permissions.IsAuthenticated,
+    )
+
+    queryset = OrderCollection.objects.all()
+    serializer_class = OrderCollectionSerializer
+
+    @action(methods=['POST', ], detail=True)
+    def update_status(self, request: Request, pk=None):
+        order_collection: OrderCollection = self.get_object()
+        serializer = OrderCollectionUpdateStatusSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid(raise_exception=True):
+            order_collection.status = serializer.validated_data['status']
+            order_collection.save()
+        return Response(OrderCollectionSerializer(instance=order_collection, context={'request': request}).data)
