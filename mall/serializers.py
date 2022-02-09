@@ -98,6 +98,7 @@ class OrderItemSerializer(serializers.HyperlinkedModelSerializer):
     product_desc = serializers.SerializerMethodField()
     product_merchant_id = serializers.SerializerMethodField()
     product_merchant_name = serializers.SerializerMethodField()
+    product_img = serializers.SerializerMethodField()
 
     def get_product_desc(self, obj: OrderItem):
         return str(obj.product)
@@ -108,6 +109,12 @@ class OrderItemSerializer(serializers.HyperlinkedModelSerializer):
     def get_product_merchant_name(self, obj: OrderItem):
         return obj.product.merchant.name
 
+    def get_product_img(self, obj: OrderItem):
+        if obj.product.img:
+            return AppImageSerializer(instance=obj.product.img, context=self.context).data
+        else:
+            return None
+
     class Meta:
         model = OrderItem
         fields = (
@@ -115,6 +122,7 @@ class OrderItemSerializer(serializers.HyperlinkedModelSerializer):
             'product_id',
             'product_merchant_id',
             'product_merchant_name',
+            'product_img',
             'product_desc',  # read only
             'price',
             'quantity',

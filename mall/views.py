@@ -88,7 +88,12 @@ class OrderViewSet(ModelViewSet):
         permissions.IsAuthenticated,
     )
 
-    queryset = Order.objects.all()
+    queryset = Order.objects.prefetch_related(
+        'items',
+        'items__product',
+        'items__product__merchant',
+        'items__product__img'
+    ).all()
     serializer_class = OrderSerializer
 
     def get_queryset(self):
