@@ -63,6 +63,7 @@ class ProductSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class UserExpressAddressSerializer(serializers.HyperlinkedModelSerializer):
+    city = serializers.CharField(required=False)
 
     def create(self, validated_data):
         creator = self.context['request'].user
@@ -70,6 +71,7 @@ class UserExpressAddressSerializer(serializers.HyperlinkedModelSerializer):
             creator=creator,
             name=validated_data['name'],
             phone_number=validated_data['phone_number'],
+            city=validated_data.get('city', None),
             address_full_txt=validated_data['address_full_txt'],
         )
         address.save()
@@ -82,6 +84,7 @@ class UserExpressAddressSerializer(serializers.HyperlinkedModelSerializer):
             'creator_id',
             'name',
             'phone_number',
+            'city',
             'address_full_txt',
             'create_at',
             'update_at',
@@ -259,3 +262,46 @@ class OrderCollectionSerializer(serializers.ModelSerializer):
         order_collection.save()
 
         return order_collection
+
+
+class UserSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(min_length=5, max_length=20, required=True)
+    avatar_id = serializers.IntegerField(required=False)
+    email = serializers.CharField(required=False)
+    first_name = serializers.CharField(required=True)
+    phone_number = serializers.CharField(required=True)
+    password = serializers.CharField(max_length=191, write_only=True)
+    avatar = AppImageSerializer(read_only=True)
+
+    def create(self, validated_data):
+        avatar = None
+        avatar_id = validated_data.get('avatar_id')
+        if avatar_id:
+            try:
+                avatar = AppImage.objects.get(pk=avatar_id)
+            except AppImage.DoesNotExist:
+                raise serializers.ValidationError({'msg': f'avatar_id = {avatar_id} does not exist!'})
+
+        user = User.objects.create(
+            username=validated_data['username'],
+            email=validated_data.get('email', None),
+            first_name=validated_data['first_name'],
+            phone_number=validated_data['phone_number'],
+            avatar=avatar,
+        )
+        password = validated_data['password']
+        user.set_password(password)
+        user.save()
+        return user
+
+    class Meta:
+        model = User
+        fields = (
+            'username',
+            'email',
+            'first_name',
+            'phone_number',
+            'avatar_id',
+            'avatar',
+            'password',
+        )

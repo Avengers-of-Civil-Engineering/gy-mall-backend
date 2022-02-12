@@ -5,6 +5,7 @@ from typing import List
 
 from django.test import TestCase
 from django.urls import reverse
+from rest_framework import status
 from rest_framework.test import APITestCase
 from .models import AppImage, Order, OrderStatus
 from .generate_mock_data import generate_mock_data
@@ -138,9 +139,52 @@ class TestAddressAPI(APITestCase):
         data = {
             "name": "小浣熊",
             "phone_number": "123456890",
+            "city": "宇宙",
             "address_full_txt": "太阳市月球村村长之家的楼梯间"
         }
         print("POST url=", url)
         print("POST data=", json.dumps(data, indent=2, ensure_ascii=False))
         resp = self.client.post(url, data, format='json')
         print("POST data return:", json.dumps(resp.data, indent=2, ensure_ascii=False))
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+
+
+
+class TestUserAPI(APITestCase):
+
+    def setUp(self) -> None:
+        generate_mock_data()
+
+    def test_register_user(self):
+        url = reverse('user-list')
+
+        data = {
+            'username': 'test111',
+            'email': 'test111@aweffr.com',
+            'first_name': '小浣熊',
+            'phone_number': '1588888888',
+            'password': 'unsafe',
+        }
+
+        print("POST url=", url)
+        print("POST data=", json.dumps(data, indent=2, ensure_ascii=False))
+        resp = self.client.post(url, data, format='json')
+        print("POST data return:", json.dumps(resp.data, indent=2, ensure_ascii=False))
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+
+
+        self.client.login(username='test111', password='unsafe')
+
+        url2 = reverse('user-detail', kwargs={'username': 'test111'})
+        print("POST url2=", url2)
+        resp2 = self.client.get(url2, format='json')
+        print("POST data return:", json.dumps(resp2.data, indent=2, ensure_ascii=False))
+        self.assertEqual(resp2.status_code, status.HTTP_200_OK)
+
+
+
+
+
+
+
+

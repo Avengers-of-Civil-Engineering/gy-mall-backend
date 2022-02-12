@@ -36,6 +36,7 @@ class UserExpressAddress(models.Model):
     creator = models.ForeignKey('mall.User', on_delete=models.SET_NULL, null=True, blank=False, verbose_name='创建者')
     name = models.CharField(max_length=191, blank=False, null=False, verbose_name='收货人姓名')
     phone_number = models.CharField(max_length=191, blank=False, null=False, verbose_name='收货人手机号')
+    city = models.CharField(max_length=191, blank=True, null=True, verbose_name='城市')
     address_full_txt = models.TextField(verbose_name='收货人地址')
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)

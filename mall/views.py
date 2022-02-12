@@ -5,10 +5,11 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework import mixins
+from rest_framework import exceptions
 
-from .models import Merchant, MerchantProductsTab, Product, Order, UserExpressAddress, OrderCollection
+from .models import Merchant, MerchantProductsTab, Product, Order, UserExpressAddress, OrderCollection, User
 from .serializers import MerchantSerializer, MerchantProductsTabSerializer, ProductSerializer, OrderSerializer, OrderUpdateStatusSerializer, \
-    UserExpressAddressSerializer, OrderCollectionSerializer, OrderCollectionUpdateStatusSerializer
+    UserExpressAddressSerializer, OrderCollectionSerializer, OrderCollectionUpdateStatusSerializer, UserSerializer
 
 
 class MerchantViewSet(ModelViewSet):
@@ -150,3 +151,28 @@ class OrderCollectionViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
             order_collection.status = serializer.validated_data['status']
             order_collection.save()
         return Response(OrderCollectionSerializer(instance=order_collection, context={'request': request}).data)
+
+
+class UserViewSet(mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet):
+    authentication_classes = (
+        authentication.SessionAuthentication,
+        authentication.TokenAuthentication,
+    )
+    permission_classes = (
+        permissions.AllowAny,
+    )
+
+    lookup_field = 'username'
+
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+    def retrieve(self, request: Request, *args, **kwargs):
+        if request.user.is_anonymous:
+            raise exceptions.PermissionDenied
+
+        user_obj: User = self.get_object()
+        if user_obj.id != request.user.id:
+            raise exceptions.PermissionDenied
+
+        return super().retrieve(request, *args, **kwargs)
