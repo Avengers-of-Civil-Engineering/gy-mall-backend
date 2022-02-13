@@ -11,12 +11,14 @@ class AppImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = AppImage
         fields = (
+            'id',
             'width',
             'height',
             'img',
             'desc',
         )
         read_only_fields = (
+            'id',
             'width',
             'height',
         )
