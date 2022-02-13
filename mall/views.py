@@ -8,9 +8,10 @@ from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework import mixins
 from rest_framework import exceptions
 
-from .models import Merchant, MerchantProductsTab, Product, Order, UserExpressAddress, OrderCollection, User
+from .models import Merchant, MerchantProductsTab, Product, Order, UserExpressAddress, OrderCollection, User, AppImage
 from .serializers import MerchantSerializer, MerchantProductsTabSerializer, ProductSerializer, OrderSerializer, OrderUpdateStatusSerializer, \
-    UserExpressAddressSerializer, OrderCollectionSerializer, OrderCollectionUpdateStatusSerializer, UserSerializer, SearchSerializer
+    UserExpressAddressSerializer, OrderCollectionSerializer, OrderCollectionUpdateStatusSerializer, UserSerializer, SearchSerializer, \
+    AppImageSerializer
 
 
 class MerchantViewSet(ModelViewSet):
@@ -177,6 +178,19 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericVie
             raise exceptions.PermissionDenied
 
         return super().retrieve(request, *args, **kwargs)
+
+
+class AppImageViewSet(mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet):
+    authentication_classes = (
+        authentication.SessionAuthentication,
+        authentication.TokenAuthentication,
+    )
+    permission_classes = (
+        permissions.IsAuthenticated,
+    )
+
+    queryset = AppImage.objects.all()
+    serializer_class = AppImageSerializer
 
 
 class SearchAPI(APIView):

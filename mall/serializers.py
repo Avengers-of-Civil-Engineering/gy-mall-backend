@@ -16,6 +16,10 @@ class AppImageSerializer(serializers.ModelSerializer):
             'img',
             'desc',
         )
+        read_only_fields = (
+            'width',
+            'height',
+        )
 
 
 class MerchantSerializer(serializers.HyperlinkedModelSerializer):

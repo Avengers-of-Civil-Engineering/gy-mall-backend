@@ -15,6 +15,7 @@ router.register(r'orders', views.OrderViewSet)
 router.register(r'order-collections', views.OrderCollectionViewSet)
 router.register(r'addresses', views.UserExpressAddressViewSet)
 router.register(r'users', views.UserViewSet)
+router.register(r'images', views.AppImageViewSet)
 
 pprint(router.get_urls())
 

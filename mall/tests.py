@@ -3,6 +3,7 @@ import os
 from random import shuffle
 from typing import List
 
+from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -210,3 +211,23 @@ class TestSearchAPI(APITestCase):
         for image in AppImage.objects.all():
             print(f'removing {image.img.path}')
             os.remove(image.img.path)
+
+
+class TestAppImageAPI(APITestCase):
+    def setUp(self) -> None:
+        generate_mock_data()
+        self.client.login(username='aweffr', password='unsafe')
+
+    def tearDown(self) -> None:
+        for image in AppImage.objects.all():
+            print(f'removing {image.img.path}')
+            os.remove(image.img.path)
+
+    def test_upload_image(self):
+        url = reverse('appimage-list')
+        data = {
+            'img': open(settings.BASE_DIR / 'doc' / 'imgs' / 'heibei.png', 'rb'),
+            'desc': '测试',
+        }
+        resp = self.client.post(url, data=data)
+        print("GET %s data return:\n" % resp.wsgi_request.get_raw_uri(), json.dumps(resp.data, indent=2, ensure_ascii=False))
