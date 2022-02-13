@@ -27,11 +27,14 @@ RUN apt-get update -y && apt-get -y install default-libmysqlclient-dev gcc && \
                 urllib3==1.26.8 \
                 whitenoise==5.3.0 \
                 python-dateutil==2.8.2 \
-                gunicorn==20.1.0
+                gunicorn==20.1.0 \
+                pypinyin==0.45.0
 
 WORKDIR /app/gy-mall-backend
 
 COPY . /app/gy-mall-backend
+
+RUN pip3 install -i https://mirrors.aliyun.com/pypi/simple -r requirements.txt
 
 EXPOSE 8000
 

@@ -268,7 +268,7 @@ class OrderCollectionSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     username = serializers.CharField(min_length=5, max_length=20, required=True)
     avatar_id = serializers.IntegerField(required=False)
-    email = serializers.CharField(required=False)
+    email = serializers.EmailField(required=True)
     first_name = serializers.CharField(required=True)
     phone_number = serializers.CharField(required=True)
     password = serializers.CharField(max_length=191, write_only=True)
@@ -282,6 +282,11 @@ class UserSerializer(serializers.ModelSerializer):
                 avatar = AppImage.objects.get(pk=avatar_id)
             except AppImage.DoesNotExist:
                 raise serializers.ValidationError({'msg': f'avatar_id = {avatar_id} does not exist!'})
+
+        phone_number = validated_data['phone_number']
+        user_tmp = User.objects.filter(phone_number=phone_number).first()
+        if user_tmp is not None:
+            raise serializers.ValidationError({'msg': '手机号已注册!'})
 
         user = User.objects.create(
             username=validated_data['username'],

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Merchant, Product, MerchantProductsTab, AppImage, Order, UserExpressAddress
+from .models import Merchant, Product, MerchantProductsTab, AppImage, Order, UserExpressAddress, User
 from .models import OrderItem
 
 
@@ -14,6 +14,11 @@ class ReportAdmin(admin.ModelAdmin):
     inlines = [
         OrderItemInline,
     ]
+
+
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    pass
 
 
 @admin.register(Merchant)

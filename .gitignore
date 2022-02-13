@@ -278,3 +278,4 @@ fabric.properties
 /gymall/prod.env
 /static/
 .idea/
+/gymall/dev.env
