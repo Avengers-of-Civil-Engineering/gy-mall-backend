@@ -155,6 +155,11 @@ class TestUserAPI(APITestCase):
     def setUp(self) -> None:
         generate_mock_data()
 
+    def tearDown(self) -> None:
+        for image in AppImage.objects.all():
+            print(f'removing {image.img.path}')
+            os.remove(image.img.path)
+
     def test_register_user(self):
         url = reverse('user-list')
 
@@ -179,6 +184,14 @@ class TestUserAPI(APITestCase):
         resp2 = self.client.get(url2, format='json')
         print("POST data return:", json.dumps(resp2.data, indent=2, ensure_ascii=False))
         self.assertEqual(resp2.status_code, status.HTTP_200_OK)
+
+        avatar = AppImage.objects.first()
+        data = {'avatar_id': avatar.id}
+        resp3 = self.client.patch(url2, data=data, format='json')
+        print("PATCH user data=%s and return: %s" % (
+            data,
+            json.dumps(resp3.data, indent=2, ensure_ascii=False),
+        ))
 
 
 class TestPinYinGenerate(TestCase):

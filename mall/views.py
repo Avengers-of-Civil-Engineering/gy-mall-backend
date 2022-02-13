@@ -155,13 +155,21 @@ class OrderCollectionViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin,
         return Response(OrderCollectionSerializer(instance=order_collection, context={'request': request}).data)
 
 
-class UserViewSet(mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet):
+class AllowPostByAnyOne(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method == 'POST':
+            return True
+        else:
+            return bool(request.user and request.user.is_authenticated)
+
+
+class UserViewSet(mixins.RetrieveModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
     authentication_classes = (
         authentication.SessionAuthentication,
         authentication.TokenAuthentication,
     )
     permission_classes = (
-        permissions.AllowAny,
+        AllowPostByAnyOne,
     )
 
     lookup_field = 'username'

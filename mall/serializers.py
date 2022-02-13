@@ -271,7 +271,7 @@ class OrderCollectionSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     username = serializers.CharField(min_length=5, max_length=20, required=True)
-    avatar_id = serializers.IntegerField(required=False)
+    avatar_id = serializers.CharField(required=False)
     email = serializers.EmailField(required=True)
     first_name = serializers.CharField(required=True)
     phone_number = serializers.CharField(required=True)
