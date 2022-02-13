@@ -3,13 +3,14 @@ from rest_framework import permissions
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework import mixins
 from rest_framework import exceptions
 
 from .models import Merchant, MerchantProductsTab, Product, Order, UserExpressAddress, OrderCollection, User
 from .serializers import MerchantSerializer, MerchantProductsTabSerializer, ProductSerializer, OrderSerializer, OrderUpdateStatusSerializer, \
-    UserExpressAddressSerializer, OrderCollectionSerializer, OrderCollectionUpdateStatusSerializer, UserSerializer
+    UserExpressAddressSerializer, OrderCollectionSerializer, OrderCollectionUpdateStatusSerializer, UserSerializer, SearchSerializer
 
 
 class MerchantViewSet(ModelViewSet):
@@ -176,3 +177,19 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericVie
             raise exceptions.PermissionDenied
 
         return super().retrieve(request, *args, **kwargs)
+
+
+class SearchAPI(APIView):
+    authentication_classes = (
+        authentication.SessionAuthentication,
+        authentication.TokenAuthentication,
+    )
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly,
+    )
+
+    def get(self, request: Request):
+        search_serializer = SearchSerializer(data=request.query_params, context={'request': request})
+        if search_serializer.is_valid(raise_exception=True):
+            search_result = search_serializer.do_search(search_serializer.validated_data)
+            return Response(search_result)

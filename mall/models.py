@@ -5,6 +5,18 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
 from random import randint
+import pypinyin
+
+
+def generate_keywords(name):
+    pinyin_result1 = ''.join(pypinyin.lazy_pinyin(name, style=pypinyin.STYLE_INITIALS))
+    pinyin_result2 = ''.join(pypinyin.lazy_pinyin(name, style=pypinyin.STYLE_NORMAL))
+    out = []
+    if pinyin_result1:
+        out.append(pinyin_result1)
+    if pinyin_result2:
+        out.append(pinyin_result2)
+    return ','.join(out)
 
 
 class AppImage(models.Model):
@@ -48,12 +60,21 @@ class UserExpressAddress(models.Model):
         verbose_name = verbose_name_plural = '收货地址'
 
 
+def limit_char_191(s: str):
+    if len(s) <= 191:
+        return s
+    else:
+        return s[:191]
+
+
 class Merchant(models.Model):
     """
     商户
     """
 
     name = models.CharField(max_length=191, verbose_name="商户名")
+    pinyin_keywords = models.CharField(max_length=191, verbose_name='拼音关键字', blank=True, null=True)
+    search_keywords = models.CharField(max_length=191, verbose_name='搜索关键字', blank=True, null=True)
     img = models.ForeignKey(AppImage, related_name='+', db_constraint=False, on_delete=models.SET_NULL, null=True, blank=True)
 
     express_limit = models.IntegerField(verbose_name='起送运费', default=0)
@@ -67,7 +88,15 @@ class Merchant(models.Model):
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+    def init_keywords(self):
+        if self.pinyin_keywords is None or self.pinyin_keywords == "":
+            self.pinyin_keywords = limit_char_191(generate_keywords(self.name))
+        if self.search_keywords is None or self.search_keywords == "":
+            self.search_keywords = limit_char_191(f"{self.name},{self.pinyin_keywords}")
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, init_keywords_called=False):
+        if not init_keywords_called:
+            self.init_keywords()
         super().save(force_insert, force_update, using, update_fields)
 
         tab_all = self.tabs.filter(slug='all').first()
@@ -116,6 +145,8 @@ class Product(models.Model):
     tab = models.ForeignKey(MerchantProductsTab, related_name='products', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='所属类目')
     img = models.ForeignKey(AppImage, related_name='+', db_constraint=False, on_delete=models.SET_NULL, null=True, blank=True)
     name = models.CharField(max_length=191, verbose_name="商品名")
+    pinyin_keywords = models.CharField(max_length=191, verbose_name='拼音关键字', blank=True, null=True)
+    search_keywords = models.CharField(max_length=191, verbose_name='搜索关键字', blank=True, null=True)
     unit_desc = models.CharField(max_length=191, verbose_name="单位文字", blank=True, null=False)
     old_price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="初始单价")
     price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="当前单价")
@@ -123,6 +154,17 @@ class Product(models.Model):
 
     create_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
+
+    def init_keywords(self):
+        if self.pinyin_keywords is None or self.pinyin_keywords == "":
+            self.pinyin_keywords = limit_char_191(generate_keywords(self.name))
+        if self.search_keywords is None or self.search_keywords == "":
+            self.search_keywords = limit_char_191(f"{self.name},{self.pinyin_keywords}")
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, init_keywords_called=False):
+        if not init_keywords_called:
+            self.init_keywords()
+        super().save(force_insert, force_update, using, update_fields)
 
     def __str__(self):
         if self.unit_desc:

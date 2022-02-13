@@ -1,15 +1,15 @@
 import json
 import os
-from pprint import pprint
+from random import shuffle
 from typing import List
 
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from .models import AppImage, Order, OrderStatus
+
 from .generate_mock_data import generate_mock_data
-from random import shuffle
+from .models import AppImage, OrderStatus
 
 
 # Create your tests here.
@@ -90,7 +90,7 @@ class TestOrderCollectionAPI(APITestCase):
         self.client.login(username='aweffr', password='unsafe')
 
     def test_order_collection_create(self):
-        from .models import User, Merchant, UserExpressAddress, Product
+        from .models import User
         u = User.objects.get(username='aweffr')
         order1 = _generate_test_order_by_merchant(username='aweffr', merchant_name='沃尔玛')
         order2 = _generate_test_order_by_merchant(username='aweffr', merchant_name='山姆会员店')
@@ -149,7 +149,6 @@ class TestAddressAPI(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
 
 
-
 class TestUserAPI(APITestCase):
 
     def setUp(self) -> None:
@@ -172,7 +171,6 @@ class TestUserAPI(APITestCase):
         print("POST data return:", json.dumps(resp.data, indent=2, ensure_ascii=False))
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
 
-
         self.client.login(username='test111', password='unsafe')
 
         url2 = reverse('user-detail', kwargs={'username': 'test111'})
@@ -182,9 +180,33 @@ class TestUserAPI(APITestCase):
         self.assertEqual(resp2.status_code, status.HTTP_200_OK)
 
 
+class TestPinYinGenerate(TestCase):
+    def setUp(self) -> None:
+        generate_mock_data()
+
+    def test_generate_pinyin_keywords(self):
+        from mall.models import Product
+
+        p: Product = Product.objects.first()
+        print(p.name, p.search_keywords)
 
 
+class TestSearchAPI(APITestCase):
+    def setUp(self) -> None:
+        generate_mock_data()
+        self.client.login(username='aweffr', password='unsafe')
 
+    def test_search(self):
+        url = reverse('search')
+        query_params = {
+            's': 'youxi',
+            'type': 'all',
+            'merchant_id': 2,
+        }
+        resp = self.client.get(url, data=query_params, format='json')
+        print("GET %s data return:\n" % resp.wsgi_request.get_raw_uri(), json.dumps(resp.data, indent=2, ensure_ascii=False))
 
-
-
+    def tearDown(self) -> None:
+        for image in AppImage.objects.all():
+            print(f'removing {image.img.path}')
+            os.remove(image.img.path)

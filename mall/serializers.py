@@ -24,7 +24,7 @@ class MerchantSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Merchant
         fields = (
-            'id', 'name', 'img', 'express_limit', 'express_price', 'sales', 'slogan', 'create_at', 'update_at'
+            'id', 'name', 'img', 'express_limit', 'express_price', 'sales', 'slogan', 'create_at', 'update_at', 'search_keywords'
         )
 
 
@@ -59,6 +59,7 @@ class ProductSerializer(serializers.HyperlinkedModelSerializer):
             'sales',
             'create_at',
             'update_at',
+            'search_keywords',
         )
 
 
@@ -305,3 +306,44 @@ class UserSerializer(serializers.ModelSerializer):
             'avatar',
             'password',
         )
+
+
+class SearchSerializer(serializers.Serializer):
+    s = serializers.CharField(min_length=1, max_length=191)
+    merchant_id = serializers.IntegerField(required=False)
+    type = serializers.ChoiceField(choices=(
+        ('all', '全部'),
+        ('merchant', '商户'),
+        ('product', '商品'),
+    ))
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+    def do_search(self, validated_data):
+        _type = validated_data['type']
+        s = validated_data['s']
+        merchant_id = validated_data.get('merchant_id')
+
+        products = []
+        merchants = []
+
+        if _type == 'merchant' or _type == 'all':
+            for m in Merchant.objects.filter(search_keywords__icontains=s):
+                merchants.append(m)
+        if _type == 'product' or _type == 'all':
+            qs = Product.objects.filter(search_keywords__icontains=s)
+            if isinstance(merchant_id, int):
+                qs = qs.filter(merchant_id=merchant_id)
+            for p in qs:
+                products.append(p)
+
+        return {
+            's': s,
+            'type': _type,
+            'products': ProductSerializer(instance=products, many=True, context=self.context).data,
+            'merchants': MerchantSerializer(instance=merchants, many=True, context=self.context).data,
+        }
