@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from random import shuffle
 from typing import List
@@ -11,6 +12,8 @@ from rest_framework.test import APITestCase
 
 from .generate_mock_data import generate_mock_data
 from .models import AppImage, OrderStatus
+
+logger = logging.getLogger(__name__)
 
 
 # Create your tests here.
@@ -45,6 +48,24 @@ def _generate_test_order_by_merchant(username, merchant_name):
         'items': items
     }
     return payload
+
+
+class MyAPITestCase(APITestCase):
+    def setUp(self) -> None:
+        generate_mock_data()
+
+    def tearDown(self) -> None:
+        for image in AppImage.objects.all():
+            print(f'removing {image.img.path}')
+            os.remove(image.img.path)
+
+
+class TestTokenLogin(MyAPITestCase):
+
+    def test_token_login(self):
+        url = reverse('token_login')
+        resp = self.client.post(url, {'username': 'aweffr', 'password': 'unsafe'})
+        logger.info('resp.data=%s', resp.data)
 
 
 class TestOrderAPI(APITestCase):

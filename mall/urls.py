@@ -5,7 +5,7 @@ from rest_framework.authtoken import views as authtoken_views
 
 from rest_framework import routers
 from . import views
-from .views import SearchAPI
+from .views import SearchAPI, MyObtainAuthTokenAPI
 
 router = routers.DefaultRouter()
 router.register(r'merchants', views.MerchantViewSet)
@@ -22,6 +22,6 @@ pprint(router.get_urls())
 urlpatterns = [
     path('', include(router.urls)),
     path('search/', SearchAPI.as_view(), name="search"),
-    path('api-token-auth/', authtoken_views.obtain_auth_token),
+    path('api-token-auth/', MyObtainAuthTokenAPI.as_view(), name="token_login"),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]

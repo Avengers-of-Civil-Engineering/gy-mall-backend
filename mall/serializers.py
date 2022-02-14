@@ -69,6 +69,10 @@ class ProductSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
+class ProductWithMerchantSerializer(ProductSerializer):
+    merchant = MerchantSerializer(read_only=True)
+
+
 class UserExpressAddressSerializer(serializers.HyperlinkedModelSerializer):
     city = serializers.CharField(required=False)
 
@@ -309,6 +313,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
+            'id',
             'username',
             'email',
             'first_name',
@@ -316,6 +321,10 @@ class UserSerializer(serializers.ModelSerializer):
             'avatar_id',
             'avatar',
             'password',
+        )
+        read_only_fields = (
+            'id',
+            'avatar',
         )
 
 
@@ -343,10 +352,10 @@ class SearchSerializer(serializers.Serializer):
         merchants = []
 
         if _type == 'merchant' or _type == 'all':
-            for m in Merchant.objects.filter(search_keywords__icontains=s):
+            for m in Merchant.objects.select_related('img').filter(search_keywords__icontains=s):
                 merchants.append(m)
         if _type == 'product' or _type == 'all':
-            qs = Product.objects.filter(search_keywords__icontains=s)
+            qs = Product.objects.select_related('merchant', 'img').filter(search_keywords__icontains=s)
             if isinstance(merchant_id, int):
                 qs = qs.filter(merchant_id=merchant_id)
             for p in qs:
@@ -355,6 +364,6 @@ class SearchSerializer(serializers.Serializer):
         return {
             's': s,
             'type': _type,
-            'products': ProductSerializer(instance=products, many=True, context=self.context).data,
+            'products': ProductWithMerchantSerializer(instance=products, many=True, context=self.context).data,
             'merchants': MerchantSerializer(instance=merchants, many=True, context=self.context).data,
         }

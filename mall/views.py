@@ -1,5 +1,7 @@
 from rest_framework import authentication
 from rest_framework import permissions
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -187,6 +189,12 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.CreateModelMixin, mixins.Upd
 
         return super().retrieve(request, *args, **kwargs)
 
+    @action(methods=['GET', ], detail=False)
+    def about_me(self, request: Request, **kwargs):
+        if request.user.is_anonymous:
+            raise exceptions.PermissionDenied
+        return Response(UserSerializer(instance=request.user, context={'request': request}).data)
+
 
 class AppImageViewSet(mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet):
     authentication_classes = (
@@ -215,3 +223,16 @@ class SearchAPI(APIView):
         if search_serializer.is_valid(raise_exception=True):
             search_result = search_serializer.do_search(search_serializer.validated_data)
             return Response(search_result)
+
+
+class MyObtainAuthTokenAPI(ObtainAuthToken):
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+            'user': UserSerializer(instance=user, context={'request': request}).data,
+        })
