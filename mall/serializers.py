@@ -429,6 +429,20 @@ class MerchantSearchSerializer(serializers.Serializer):
             for idx in range(len(item['products'])):
                 item['products'][idx] = ProductSerializer(instance=item['products'][idx], context=self.context).data
 
+        # search for merchant that names contains keywords and not hit by products
+        qs = Merchant.objects.filter(search_keywords__icontains=s).exclude(id__in=merchant_dict.keys()).all()
+        search_result_merchants = []
+        for m in qs:
+            search_result_merchants.append({
+                "merchant": MerchantSerializer(instance=m, context=self.context).data,
+                "products": [],
+            })
+        if len(search_result_merchants) > 0:
+            search_result = [
+                *search_result_merchants,
+                *search_result,
+            ]
+
         return {
             's': s,
             'limit': limit,
