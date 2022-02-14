@@ -1,4 +1,5 @@
 import decimal
+from collections import defaultdict
 from typing import Optional
 
 import django.db.transaction
@@ -331,6 +332,7 @@ class UserSerializer(serializers.ModelSerializer):
 class SearchSerializer(serializers.Serializer):
     s = serializers.CharField(min_length=1, max_length=191)
     merchant_id = serializers.IntegerField(required=False)
+    limit = serializers.IntegerField(default=10, min_value=1, max_value=50, required=False)
     type = serializers.ChoiceField(choices=(
         ('all', '全部'),
         ('merchant', '商户'),
@@ -347,23 +349,83 @@ class SearchSerializer(serializers.Serializer):
         _type = validated_data['type']
         s = validated_data['s']
         merchant_id = validated_data.get('merchant_id')
+        limit = validated_data['limit']
 
         products = []
         merchants = []
 
         if _type == 'merchant' or _type == 'all':
-            for m in Merchant.objects.select_related('img').filter(search_keywords__icontains=s):
+            for m in Merchant.objects.select_related('img').filter(search_keywords__icontains=s)[:limit]:
                 merchants.append(m)
         if _type == 'product' or _type == 'all':
             qs = Product.objects.select_related('merchant', 'img').filter(search_keywords__icontains=s)
             if isinstance(merchant_id, int):
                 qs = qs.filter(merchant_id=merchant_id)
-            for p in qs:
+            for p in qs[:limit]:
                 products.append(p)
 
         return {
             's': s,
             'type': _type,
+            'limit': limit,
             'products': ProductWithMerchantSerializer(instance=products, many=True, context=self.context).data,
             'merchants': MerchantSerializer(instance=merchants, many=True, context=self.context).data,
+        }
+
+
+class MerchantSearchSerializer(serializers.Serializer):
+    s = serializers.CharField(min_length=1, max_length=191)
+    limit = serializers.IntegerField(default=10, min_value=1, max_value=50, required=False)
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+    def do_search(self, validated_data):
+        s = validated_data['s']
+        limit = validated_data['limit']
+
+        qs = Product.objects.filter(search_keywords__icontains=s).values_list('id', 'merchant_id')
+
+        ret = defaultdict(list)
+
+        product_id_set = set()
+        for product_id, merchant_id in qs:
+            if merchant_id in ret:
+                product_id_set.add(product_id)
+                ret[merchant_id].append(product_id)
+            else:
+                if len(ret) == limit:
+                    break
+                else:
+                    product_id_set.add(product_id)
+                    ret[merchant_id].append(product_id)
+
+        merchant_dict = {
+            m.id: m for m in Merchant.objects.filter(id__in=ret.keys())
+        }
+
+        product_dict = {
+            p.id: p for p in Product.objects.filter(id__in=product_id_set)
+        }
+
+        search_result = [
+            {
+                "merchant": merchant_dict[merchant_id],
+                "products": [product_dict[_p_id] for _p_id in product_id_list]
+            } for merchant_id, product_id_list in ret.items()
+        ]
+
+        # serialize
+        for item in search_result:
+            item['merchant'] = MerchantSerializer(instance=item['merchant'], context=self.context).data
+            for idx in range(len(item['products'])):
+                item['products'][idx] = ProductSerializer(instance=item['products'][idx], context=self.context).data
+
+        return {
+            's': s,
+            'limit': limit,
+            'search_result': search_result
         }

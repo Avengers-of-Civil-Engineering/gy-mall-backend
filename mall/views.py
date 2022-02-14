@@ -13,7 +13,7 @@ from rest_framework import exceptions
 from .models import Merchant, MerchantProductsTab, Product, Order, UserExpressAddress, OrderCollection, User, AppImage
 from .serializers import MerchantSerializer, MerchantProductsTabSerializer, ProductSerializer, OrderSerializer, OrderUpdateStatusSerializer, \
     UserExpressAddressSerializer, OrderCollectionSerializer, OrderCollectionUpdateStatusSerializer, UserSerializer, SearchSerializer, \
-    AppImageSerializer
+    AppImageSerializer, MerchantSearchSerializer
 
 
 class MerchantViewSet(ModelViewSet):
@@ -222,6 +222,22 @@ class SearchAPI(APIView):
         search_serializer = SearchSerializer(data=request.query_params, context={'request': request})
         if search_serializer.is_valid(raise_exception=True):
             search_result = search_serializer.do_search(search_serializer.validated_data)
+            return Response(search_result)
+
+
+class SearchMerchantAPI(APIView):
+    authentication_classes = (
+        authentication.SessionAuthentication,
+        authentication.TokenAuthentication,
+    )
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly,
+    )
+
+    def get(self, request: Request):
+        serializer = MerchantSearchSerializer(data=request.query_params, context={'request': request})
+        if serializer.is_valid(raise_exception=True):
+            search_result = serializer.do_search(serializer.validated_data)
             return Response(search_result)
 
 

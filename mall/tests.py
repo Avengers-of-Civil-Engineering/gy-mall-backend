@@ -241,6 +241,14 @@ class TestSearchAPI(APITestCase):
         resp = self.client.get(url, data=query_params, format='json')
         print("GET %s data return:\n" % resp.wsgi_request.get_raw_uri(), json.dumps(resp.data, indent=2, ensure_ascii=False))
 
+    def test_merchant_search(self):
+        url = reverse('search-merchant')
+        data = {
+            's': 's',
+        }
+        resp = self.client.get(url, data=data, format='json')
+        print("GET %s data return:\n" % resp.wsgi_request.get_raw_uri(), json.dumps(resp.data, indent=2, ensure_ascii=False))
+
     def tearDown(self) -> None:
         for image in AppImage.objects.all():
             print(f'removing {image.img.path}')

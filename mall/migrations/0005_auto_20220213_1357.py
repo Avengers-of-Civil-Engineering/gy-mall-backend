@@ -5,15 +5,25 @@ from django.db.models import Q
 
 
 def init_keyword(apps, schema_editor):
-    Product = apps.get_model("mall", "Product")
-    Merchant = apps.get_model("mall", "Merchant")
+    try:
+        from mall.models import Product
+    except ImportError:
+        Product = None
+    try:
+        from mall.models import Merchant
+    except ImportError:
+        Merchant = None
+
     db_alias = schema_editor.connection.alias
-    for product in Product.objects.using(db_alias).filter(Q(pinyin_keywords__isnull=True) | Q(search_keywords__isnull=True)):
-        product.init_keywords()
-        product.save(init_keywords_called=True)
-    for merchant in Merchant.objects.using(db_alias).filter(Q(pinyin_keywords__isnull=True) | Q(search_keywords__isnull=True)):
-        merchant.init_keywords()
-        merchant.save(init_keywords_called=True)
+
+    if Product is not None:
+        for product in Product.objects.using(db_alias).filter(Q(pinyin_keywords__isnull=True) | Q(search_keywords__isnull=True)):
+            product.init_keywords()
+            product.save(init_keywords_called=True)
+    if Merchant is not None:
+        for merchant in Merchant.objects.using(db_alias).filter(Q(pinyin_keywords__isnull=True) | Q(search_keywords__isnull=True)):
+            merchant.init_keywords()
+            merchant.save(init_keywords_called=True)
 
 
 class Migration(migrations.Migration):
