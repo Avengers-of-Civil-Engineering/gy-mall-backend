@@ -286,6 +286,11 @@ class UserSerializer(serializers.ModelSerializer):
     avatar = AppImageSerializer(read_only=True)
 
     def create(self, validated_data):
+        username = validated_data.get('username')
+        user_tmp = User.objects.filter(username__iexact=username).first()
+        if user_tmp is not None:
+            raise serializers.ValidationError({'msg': '用户名已注册！'})
+
         avatar = None
         avatar_id = validated_data.get('avatar_id')
         if avatar_id:
