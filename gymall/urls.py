@@ -17,6 +17,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 
+admin.site.site_header = 'GY-MALL 后台管理'
+
 urlpatterns = [
     path(f'admin-{settings.ADMIN_URL_SUFFIX}/', admin.site.urls),
     path('api/v1/', include('mall.urls')),
