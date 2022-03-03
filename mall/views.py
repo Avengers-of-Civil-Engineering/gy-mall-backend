@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework import mixins
 from rest_framework import exceptions
-
+from .authentication import MySessionAuthentication
 from .models import Merchant, MerchantProductsTab, Product, Order, UserExpressAddress, OrderCollection, User, AppImage
 from .serializers import MerchantSerializer, MerchantProductsTabSerializer, ProductSerializer, OrderSerializer, OrderUpdateStatusSerializer, \
     UserExpressAddressSerializer, OrderCollectionSerializer, OrderCollectionUpdateStatusSerializer, UserSerializer, SearchSerializer, \
@@ -18,7 +18,7 @@ from .serializers import MerchantSerializer, MerchantProductsTabSerializer, Prod
 
 class MerchantViewSet(ModelViewSet):
     authentication_classes = (
-        authentication.SessionAuthentication,
+        MySessionAuthentication,
         authentication.TokenAuthentication,
     )
     permission_classes = (
@@ -59,7 +59,7 @@ class MerchantViewSet(ModelViewSet):
 
 class MerchantProductsTabViewSet(ModelViewSet):
     authentication_classes = (
-        authentication.SessionAuthentication,
+        MySessionAuthentication,
         authentication.TokenAuthentication,
     )
     permission_classes = (
@@ -72,7 +72,7 @@ class MerchantProductsTabViewSet(ModelViewSet):
 
 class ProductViewSet(ModelViewSet):
     authentication_classes = (
-        authentication.SessionAuthentication,
+        MySessionAuthentication,
         authentication.TokenAuthentication,
     )
     permission_classes = (
@@ -87,7 +87,7 @@ class ProductViewSet(ModelViewSet):
 
 class OrderViewSet(ModelViewSet):
     authentication_classes = (
-        authentication.SessionAuthentication,
+        MySessionAuthentication,
         authentication.TokenAuthentication,
     )
     permission_classes = (
@@ -119,7 +119,7 @@ class OrderViewSet(ModelViewSet):
 
 class UserExpressAddressViewSet(ModelViewSet):
     authentication_classes = (
-        authentication.SessionAuthentication,
+        MySessionAuthentication,
         authentication.TokenAuthentication,
     )
     permission_classes = (
@@ -137,7 +137,7 @@ class UserExpressAddressViewSet(ModelViewSet):
 
 class OrderCollectionViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.ListModelMixin, GenericViewSet):
     authentication_classes = (
-        authentication.SessionAuthentication,
+        MySessionAuthentication,
         authentication.TokenAuthentication,
     )
     permission_classes = (
@@ -167,7 +167,7 @@ class AllowPostByAnyOne(permissions.BasePermission):
 
 class UserViewSet(mixins.RetrieveModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, GenericViewSet):
     authentication_classes = (
-        authentication.SessionAuthentication,
+        MySessionAuthentication,
         authentication.TokenAuthentication,
     )
     permission_classes = (
@@ -198,7 +198,7 @@ class UserViewSet(mixins.RetrieveModelMixin, mixins.CreateModelMixin, mixins.Upd
 
 class AppImageViewSet(mixins.RetrieveModelMixin, mixins.CreateModelMixin, GenericViewSet):
     authentication_classes = (
-        authentication.SessionAuthentication,
+        MySessionAuthentication,
         authentication.TokenAuthentication,
     )
     permission_classes = (
@@ -211,7 +211,7 @@ class AppImageViewSet(mixins.RetrieveModelMixin, mixins.CreateModelMixin, Generi
 
 class SearchAPI(APIView):
     authentication_classes = (
-        authentication.SessionAuthentication,
+        MySessionAuthentication,
         authentication.TokenAuthentication,
     )
     permission_classes = (
@@ -227,7 +227,7 @@ class SearchAPI(APIView):
 
 class SearchMerchantAPI(APIView):
     authentication_classes = (
-        authentication.SessionAuthentication,
+        MySessionAuthentication,
         authentication.TokenAuthentication,
     )
     permission_classes = (

@@ -47,7 +47,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -72,9 +72,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'gymall.wsgi.application'
-
-# Database
-# https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
 DATABASES = {
     'default': env.db("DATABASE_URL")
@@ -189,7 +186,7 @@ LOGGING = {
         },
     },
     'loggers': {
-        'report': {
+        'mall': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': False,
