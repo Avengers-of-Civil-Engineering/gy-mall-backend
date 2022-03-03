@@ -242,6 +242,7 @@ class SearchMerchantAPI(APIView):
 
 
 class MyObtainAuthTokenAPI(ObtainAuthToken):
+    authentication_classes = ()
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
